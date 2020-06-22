@@ -1,5 +1,6 @@
 import os
 import re
+import math
 
 import nltk
 import numpy as np
@@ -10,6 +11,7 @@ from sklearn.feature_extraction.text import CountVectorizer
 from nltk.corpus import stopwords
 from sklearn.naive_bayes import MultinomialNB
 from tabulate import tabulate
+from matplotlib import pyplot as plt
 
 
 def smoothing(a, b):
@@ -66,14 +68,14 @@ class NaiveBayesClassifier:
             self.bayes_matrix[1][i] = smoothing(word_in_spam, num_spam_words)
 
     def classify(self, new_message):
-        predict_spam = self.spam_coef
-        predict_ham = self.ham_coef
+        predict_spam = math.log(self.spam_coef)
+        predict_ham = math.log(self.ham_coef)
         new_message = self.process_message(new_message)
         vecterized_message = self.count_vectorizer.transform([new_message]).toarray()[0]
         for idx, val in enumerate(vecterized_message):
             if val != 0:
-                predict_ham *= self.bayes_matrix[0][idx] ** val
-                predict_spam *= self.bayes_matrix[1][idx] ** val
+                predict_ham += val * math.log(self.bayes_matrix[0][idx])
+                predict_spam += val * math.log(self.bayes_matrix[1][idx])
         return True if predict_spam > predict_ham else False
 
     def predict(self):
@@ -95,6 +97,9 @@ class NaiveBayesClassifier:
             'Predicted: Spam': [true_positive, false_positive],
             'Predicted: Ham': [false_negative, true_negative]
         }, headers='keys'))
+        accuracy = round((true_negative + true_positive) / len(self.test_data), 4)
+        print(f"Accuracy: {accuracy}")
+        print(f"Total: {len(self.test_data)}")
 
 
 if __name__ == '__main__':
